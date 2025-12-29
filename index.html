@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Rhythm Test</title>
+
+        <style>
+            body {
+                margin: 0;
+                height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background: #f5f5f5;
+                position: relative; /* IMPORTANT */
+            }
+
+            #container {
+                display: flex;
+                gap: 20px;
+                position: absolute;
+                bottom: 100px;
+            }
+
+            .circle {
+                width: 60px;
+                height: 60px;
+                border: 3px solid black;
+                border-radius: 50%;
+                box-sizing: border-box;
+            }
+
+            .falling {
+                position: absolute;
+                top: 0;
+                transform: translateY(-80px);
+            }
+            #scoreBox {
+                position: absolute;
+                top: 0;
+                right: 0;
+                margin-right: 40px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="container">
+            <div id="d" class="circle"></div>
+            <div class="circle"></div>
+            <div class="circle"></div>
+            <div class="circle"></div>
+        </div>
+        <div id="scoreBox">
+            <h1 id="perfectCounter">Perfect: 0</h1>
+            <h1 id="goodCounter">Good: 0</h1>
+            <h1 id="niceCounter">Nice: 0</h1>
+            <h1 id="missedCounter">Missed: 0</h1>
+        </div>
+
+        <script>
+            let misses = 0;
+            let perfects = 0;
+            let goods = 0;
+            let nices = 0;
+            let speed = 8;
+            function makeCircle() {
+                const fallingCircle = document.createElement("div");
+                fallingCircle.classList.add("circle", "falling");
+
+                // choose lane index (0–3)
+                const laneIndex = Math.floor(Math.random() * 4);
+                const container = document.getElementById("container");
+                const target = container.children[laneIndex];
+                const rect = target.getBoundingClientRect();
+                fallingCircle.style.left = rect.left + "px";
+
+                document.body.append(fallingCircle);
+
+                // animation loop
+                let y = -80;
+                fallingCircle.alive = true;
+
+                function fall() {
+                    if (!fallingCircle.alive) return; // stop if removed
+                    y += speed;
+                    fallingCircle.style.transform = `translateY(${y}px)`;
+                    if (y > 730) {
+                        fallingCircle.alive = false;
+                        fallingCircle.remove();
+                        misses += 1;
+                        refreshScore();
+                    } else {
+                        requestAnimationFrame(fall);
+                    }
+                }
+
+                // key handler:
+
+                fall();
+            }
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    makeCircle();
+                }, 200 * (i * (Math.random() * (1 - 0.9) + 0.9)));
+            }
+
+            function refreshScore() {
+                const perfectCounter = document.getElementById("perfectCounter");
+                const goodCounter = document.getElementById("goodCounter");
+                const niceCounter = document.getElementById("niceCounter");
+                const missedCounter = document.getElementById("missedCounter");
+                perfectCounter.innerText = `Perfect: ${perfects}`;
+                goodCounter.innerText = `Good: ${goods}`;
+                niceCounter.innerText = `Nice: ${nices}`;
+                missedCounter.innerText = `Missed: ${misses}`;
+            }
+
+            const keyToLane = {
+                d: 0,
+                f: 1,
+                j: 2,
+                k: 3,
+            };
+
+            document.addEventListener("keydown", (e) => {
+                const laneIndex = keyToLane[e.key.toLowerCase()];
+                if (laneIndex === undefined) return;
+
+                const container = document.getElementById("container");
+                const target = container.children[laneIndex];
+                const rectTarget = target.getBoundingClientRect();
+
+                // Loop through all falling circles
+                const fallingCircles = document.querySelectorAll(".falling");
+                fallingCircles.forEach((fc) => {
+                    // Only check circles in this lane
+                    const fcRect = fc.getBoundingClientRect();
+                    if (Math.abs(fcRect.left - rectTarget.left) < 10) {
+                        const distance = fcRect.bottom - rectTarget.top;
+                        // console.log(`Distance for lane ${laneIndex}:`, distance);
+                        if (distance >= 20) {
+                            console.log("perfect");
+                            perfects += 1;
+                            refreshScore();
+                            fc.alive = false;
+                            fc.remove();
+                        } else if (distance >= -40 && distance < 20) {
+                            console.log("good");
+                            goods += 1;
+                            fc.alive = false;
+                            fc.remove();
+                        } else if (distance >= -80 && distance < -4) {
+                            console.log("nice");
+                            nices += 1;
+                            fc.alive = false;
+                            fc.remove();
+                        }
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>
